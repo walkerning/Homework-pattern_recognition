@@ -42,16 +42,33 @@ def handle_doc_input(phase, path="."):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("type", help="classifier type", choices=Classifier.populate_all_types())
-    parser.add_argument("train_path", help="the path of the train data files", default=".")
-    parser.add_argument("test_path", help="the path of the test data files", default=".")
+    subparsers = parser.add_subparsers(dest="job")
+    # Prepare the train parser
+    train_parser = subparsers.add_parser("train")
+    train_parser.set_defaults(func=train)
+    train_parser.add_argument("type", help="classifier type", choices=Classifier.populate_all_types())
+    train_parser.add_argument("train_path", help="the path of the train data files", default=".")
+    train_parser.add_argument("test_path", help="the path of the test data files", default=".")
     # only `None` and `test` are realized
-    parser.add_argument("-v", "--validation", help="use what method for validation. TODO: k-fold",
+    train_parser.add_argument("-v", "--validation", help="use what method for validation. TODO: k-fold",
                         choices=["None", "test"], default="None")
     # not friendly... but who cares...
-    parser.add_argument("-c", "--config", help="a string of space-seperated configurations for the classifier. wrong configuration will be discarded. eg. `max_epoch=5 momentum=0.9", default="")
-    args = parser.parse_args()
+    train_parser.add_argument("-c", "--config", help="a string of space-seperated configurations for the classifier. wrong configuration will be discarded. eg. `max_epoch=5 momentum=0.9", default="")
+    train_parser.add_argument("-s", "--save", help="the model name prefix, if not specified, the model will not be saved.", default="")
 
+    # Prepare the test parser
+    test_parser = subparsers.add_parser("test")
+    test_parser.set_defaults(func=test)
+    test_parser.add_argument("type", help="classifier type", choices=Classifier.populate_all_types())
+    test_parser.add_argument("--name", help="the name of the dataset, default `test`", default=test)
+    test_parser.add_argument("test_path", help="the path of the test data files", default=".")
+    test_parser.add_argument("--model", help="the model to load", required=True)
+
+    # Parse arguments
+    args = parser.parse_args()
+    args.func(args)
+
+def train(args):
     training_data_list, index2name_dict, max_word_id = handle_doc_input("train", args.train_path)
 
     config_dict = {}
@@ -64,18 +81,39 @@ def main():
         # must be done inside specific classifier
         config_dict[c_name] = c_value
 
-    classifier = Classifier.get_classifier_cls(args.type)(index2name_dict,
+    classifier = Classifier.get_registry(args.type)(index2name_dict,
                                                           max_word_id=max_word_id,
                                                           **config_dict)
     test_data_list, _, _ = handle_doc_input("test", args.test_path)
 
+    # TODO/FIXME: more configurations for val data.
+    #       in fact, using plateau detection learning controller with test set as val set is kind of cheating...
+    #       Should using k-fold!
+    val_data_list = [] if args.validation == None else test_data_list
     with profile_context("training"):
-        classifier.train(training_data_list, [] if args.validation == None else test_data_list)
+        classifier.train(training_data_list, val_data_list)
     logger.info("Finished training {} classifier.".format(args.type))
 
     train_num_tested, train_num_error = test_data(classifier, "test the trainning set", training_data_list)
     train_error_rate = float(train_num_error)/train_num_tested
     logger.info("The error rate on **training set** of {} classifier is {} ({}/{})".format(args.type, train_error_rate, train_num_error, train_num_tested))
+
+    test_num_tested, test_num_error = test_data(classifier, "test the test set", test_data_list)
+    test_error_rate = float(test_num_error)/test_num_tested
+    logger.info("The error rate on **test set** of {} classifier is {} ({}/{})".format(args.type, test_error_rate, test_num_error, test_num_tested))
+
+    if args.save:
+        save_fname = args.save + "-{}.dat".format(time.strftime("%m-%d-%H-%M-%S"))
+        logger.info("Saving model to {}...".format(save_fname))
+        classifier.save(save_fname)
+        logger.info("Saving model finished.")
+
+
+def test(args):
+    classifier_cls = Classifier.get_registry(args.type)
+    classifier = classifier_cls.load(args.model)
+
+    test_data_list, _, _ = handle_doc_input(args.name, args.test_path)
 
     test_num_tested, test_num_error = test_data(classifier, "test the test set", test_data_list)
     test_error_rate = float(test_num_error)/test_num_tested

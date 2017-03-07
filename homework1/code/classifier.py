@@ -2,6 +2,7 @@
 
 import math
 import copy
+import cPickle
 
 from registry import Registry
 
@@ -18,18 +19,10 @@ class Classifier(object):
     __metaclass__ = Registry
     REGISTRY_NAME = "classifier"
 
-    @classmethod
-    def populate_all_types(cls):
-        return cls.list_registry()
-
-    @classmethod
-    def get_classifier_cls(cls, typ):
-        return cls.get_registry(typ)
-
     def index2label(self, index):
         pass
 
-    def train(self, samples):
+    def train(self, samples, val_samplesp):
         """
         samples is a iterator or iteratable of training data (x, y)
         x is the feature vector, y is the label index.
@@ -39,6 +32,12 @@ class Classifier(object):
         """
         input a feature vector, classify into labels
         """
+
+    def save(self, fname):
+        """
+        save the trained model to file
+        """
+
 
 class DocumentClassifier(Classifier):
     def __init__(self, index2name_dict):
@@ -60,7 +59,7 @@ class NaiveBayesClassifier(DocumentClassifier):
         self.nonexist_log_list = [0 for _ in range(self.num_labels)]
         self.max_word_index = config["max_word_id"]
 
-    def train(self, samples):
+    def train(self, samples, _):
         # max_word_index = 0 # assume there are `max_word_index` types of words
         for sample in samples:
             self.prior_count_list[sample[1]] += 1
@@ -98,6 +97,20 @@ class NaiveBayesClassifier(DocumentClassifier):
                 post_list[l] += count * logp
 
         return _argmax(post_list)
+
+    @classmethod
+    def load(cls, fname):
+        self = cls({})
+        with open(fname, "r") as f:
+            self.index2name_dict, self.prior_count_list, self.count_dict, self.nonexist_log_list = cPickle.load(f)
+        return self
+
+    def save(self, fname):
+        with open(fname, "w") as f:
+            cPickle.dump((self.index2name_dict,
+                          self.prior_count_list,
+                          self.count_dict,
+                          self.nonexist_log_list), f)
 
 # import different classifiers
 import logistic

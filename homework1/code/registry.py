@@ -14,6 +14,9 @@ class Registry(type):
             assert typ not in Registry._REGISTRY[registry_name][1], "Error: A {} class of type `{}` is already registered.".format(registry_name, typ)
             Registry._REGISTRY[registry_name][1][typ] = cls
 
+    def populate_all_types(cls):
+        return cls.list_registry()
+
     @classmethod
     def _get_registry(mcls, name, typ):
         return Registry._REGISTRY[name][typ]
