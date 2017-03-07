@@ -13,6 +13,7 @@ except ImportError:
     _sum = sum
     _argmax = lambda x: max(enumerate(x), key=lambda y: y[1])[0]
 
+
 class Classifier(object):
     __metaclass__ = Registry
     REGISTRY_NAME = "classifier"
@@ -47,23 +48,25 @@ class DocumentClassifier(Classifier):
     def index2label(self, index):
         return self.index2name_dict[index]
 
+
 class NaiveBayesClassifier(DocumentClassifier):
     TYPE = "NaiveBayes"
 
-    def __init__(self, index2name_dict):
+    def __init__(self, index2name_dict, **config):
         super(NaiveBayesClassifier, self).__init__(index2name_dict)
 
         self.count_dict = {l: {} for l in range(self.num_labels)}
         self.prior_count_list = [0 for _ in range(self.num_labels)]
         self.nonexist_log_list = [0 for _ in range(self.num_labels)]
+        self.max_word_index = config["max_word_id"]
 
     def train(self, samples):
-        max_word_index = 0 # assume there are `max_word_index` types of words
+        # max_word_index = 0 # assume there are `max_word_index` types of words
         for sample in samples:
             self.prior_count_list[sample[1]] += 1
             for word, count in sample[0]:
-                if word > max_word_index:
-                    max_word_index = word
+                # if word > max_word_index:
+                #     max_word_index = word
                 if word not in self.count_dict[sample[1]]:
                     self.count_dict[sample[1]][word] = 0
                 self.count_dict[sample[1]][word] += count
@@ -73,7 +76,7 @@ class NaiveBayesClassifier(DocumentClassifier):
         for l in self.count_dict.iterkeys():
             # if with numpy dependency, can use np.sum to accelerate
             total = _sum(self.count_dict[l].values())
-            total += max_word_index # add one smooth
+            total += self.max_word_index # add one smooth
             log_total = math.log(float(total))
             self.nonexist_log_list[l] = -log_total
             for w in self.count_dict[l]:
@@ -96,6 +99,5 @@ class NaiveBayesClassifier(DocumentClassifier):
 
         return _argmax(post_list)
 
-class LogisticClassifier(DocumentClassifier):
-    """The multinomial discriminative logistic regression classifier."""
-    TYPE = "Logistic"
+# import different classifiers
+import logistic

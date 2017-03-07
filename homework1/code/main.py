@@ -3,13 +3,12 @@
 
 from __future__ import print_function
 import os
-import sys
-import time
+import re
 import logging
 import argparse
-from contextlib import contextmanager
 
 from classifier import Classifier
+from common_utils import *
 
 # setup a simple logger
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
@@ -21,12 +20,17 @@ def handle_doc_input(phase, path="."):
         labels = [int(l.strip()) for l in f]
 
     features_dict = {}
+    max_word_id = 0
     with open(os.path.join(path, phase + ".data"), "r") as f:
         # todo, do we leave the file open as an iterator to sacrifise speed for memory?
         for l in f:
             doc_id, word_id, count = l.split(" ")
+            word_id = int(word_id)
+            if word_id > max_word_id:
+                max_word_id = word_id
+            word_id -= 1
             doc_id = int(doc_id)
-            features_dict.setdefault(doc_id, []).append((int(word_id), int(count)))
+            features_dict.setdefault(doc_id, []).append((word_id, int(count)))
 
     training_data_list = [(v, labels[k-1]-1)  for k, v in features_dict.iteritems()]
     index2name_dict = {}
@@ -34,44 +38,40 @@ def handle_doc_input(phase, path="."):
         for l in f:
             name, index = l.split(" ")
             index2name_dict[int(index)] = name
-
-    return training_data_list, index2name_dict
-
-@contextmanager
-def profile_context(name):
-    start_time = time.time()
-    print("{} ... ".format(name), end="")
-    sys.stdout.flush()
-    yield
-    elapsed_time = time.time() - start_time
-    print("{} s elapsed.".format(elapsed_time))
-
-def test_data(classifier, name, data_list):
-    num_tested = 0
-    num_error = 0
-    with profile_context(name):
-        for test_case in data_list:
-            test_res = classifier.test(test_case[0])
-            num_tested += 1
-            if test_res != test_case[1]:
-                num_error += 1
-    return num_tested, num_error
+    return training_data_list, index2name_dict, max_word_id
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("type", help="classifier type", choices=Classifier.populate_all_types())
     parser.add_argument("train_path", help="the path of the train data files", default=".")
     parser.add_argument("test_path", help="the path of the test data files", default=".")
+    # only `None` and `test` are realized
+    parser.add_argument("-v", "--validation", help="use what method for validation. TODO: k-fold",
+                        choices=["None", "test"], default="None")
+    # not friendly... but who cares...
+    parser.add_argument("-c", "--config", help="a string of space-seperated configurations for the classifier. wrong configuration will be discarded. eg. `max_epoch=5 momentum=0.9", default="")
     args = parser.parse_args()
 
-    training_data_list, index2name_dict = handle_doc_input("train", args.train_path)
+    training_data_list, index2name_dict, max_word_id = handle_doc_input("train", args.train_path)
 
-    classifier = Classifier.get_classifier_cls(args.type)(index2name_dict)
+    config_dict = {}
+    for c in re.split("[ \t]+", args.config):
+        if not c:
+            continue
+        c_name, c_value = c.split("=")
+        # Note that all of the values is of string type.
+        # specific conversion of the configuration values
+        # must be done inside specific classifier
+        config_dict[c_name] = c_value
+
+    classifier = Classifier.get_classifier_cls(args.type)(index2name_dict,
+                                                          max_word_id=max_word_id,
+                                                          **config_dict)
+    test_data_list, _, _ = handle_doc_input("test", args.test_path)
+
     with profile_context("training"):
-        classifier.train(training_data_list)
+        classifier.train(training_data_list, [] if args.validation == None else test_data_list)
     logger.info("Finished training {} classifier.".format(args.type))
-
-    test_data_list, _ = handle_doc_input("test", args.test_path)
 
     train_num_tested, train_num_error = test_data(classifier, "test the trainning set", training_data_list)
     train_error_rate = float(train_num_error)/train_num_tested
