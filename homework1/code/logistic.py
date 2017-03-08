@@ -26,8 +26,8 @@ class LogisticClassifier(DocumentClassifier):
     default_config = {
         "batch_size": 0,
         "momentum": 0,
-        "epoch": 40,
-        "weight_decay": 0.5,
+        "epoch": 50,
+        "weight_decay": 0,
         "base_learning_rate": 1,
         "decay_learning_rate": 0.5,
         "sparse": True,

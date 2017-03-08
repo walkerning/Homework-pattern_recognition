@@ -1,6 +1,7 @@
 \documentclass{article}
 \usepackage{scrextend}
 \usepackage{mathrsfs}
+\usepackage{hyperref}
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage{amssymb}
@@ -367,7 +368,7 @@ sure to describe how to estimate the model parameters and how to classify a new 
   \]
   Also, there is a constraint for $\theta_{y,i}$ that $\sum_{i=1}^{m} \theta_{y, i} = 1$. We can obtain the Lagrangian of this problem:
   \[
-  \sum_{n=1}^N (\sum_{i=1}^m count_i(x^{(n)}) \ln(\theta_{y,i})) - a(\sum_{i=1}^m \theta{y, i})
+  \sum_{n=1}^N (\sum_{i=1}^m count_i(x^{(n)}) \ln(\theta_{y,i})) - a(\sum_{i=1}^m \theta_{y, i} - 1)
   \]
   Take the derivative with respect to $\theta_{y, i}$, we have:
   \[
@@ -426,62 +427,71 @@ data. Report the training and test error of both models. Submit your code along 
 
 \begin{addmargin}[3em]{2em}
   \begin{center}
-    \begin{tabular}{ | c | c | c | }
+    \begin{tabular}{ | c | c | c | c | c | c |  }
       \hline
-      Model & Train Error & Test Error\\\hline
-      Naive Bayes & 5.67\% & 21.48\%\\
-      Logistic Regression-exp1 (20 epoch) & 40.26\% & 50.53\%\\
-      Logistic Regression-exp2 (20 epoch) & - & 49.29\%\\
-      Logistic Regression-exp2 (40 epoch) & 35.22\% & 46.60\% \\
-      Logistic Regression-exp3 (SGD 20 epoch) & \% & 40.71\% \\
+      Model & Batch Size & Optimizer & Epoch & Train Error Rate & Test Error Rate\\\hline
+      \multicolumn{4}{| c |}{Naive Bayes} & 5.67\% & 21.48\%\\ \hline
 
+      %Logistic Regression-exp1 & no & GD & 20 & - & 49.29\%\\
+      Logistic Regression-exp1 & no & GD & 40 & 35.22\% & 46.60\% \\\hline
+
+      %Logistic Regression-exp2 & 250 & SGD & 20 & - & 40.54\% \\
+      Logistic Regression-exp2 & 250 & SGD & 50 & 19.42\% & 35.95\% \\
+
+      %Logistic Regression-exp3 & 125 & SGD & 20 & - & 40.49\% \\
+      Logistic Regression-exp3 & 125 & SGD & 50 & 16.72\% & 34.24\% \\
       \hline
     \end{tabular}
   \end{center}
-  Some screenshots is shown below:
-  \begin{figure}
+  Some screenshots is shown in \hyperref[pic:help]{help\_message}, \hyperref[pic:nb]{NB\_training}, \hyperref[pic:lr]{LR\_training}.
+
+  \begin{figure}[!tbp]
     \centering%
     \includegraphics[height=5cm]{help.jpeg}
     \caption{View The Help Message}
-  \end{figure}
-
-  \begin{figure}
-    \centering%
-    \includegraphics[height=3cm]{nb_run.jpeg}
-    \caption{Naive Bayes Training}
+    \label{pic:help}
   \end{figure}
 
   \begin{figure}[!tbp]
     \centering%
+    \includegraphics[height=3cm]{nb_run.jpeg}
+    \caption{Naive Bayes Training}
+    \label{pic:nb}
+  \end{figure}
+
+  \begin{figure}[!tbp]
+    \centering%per
     \begin{subfigure}[b]{\columnwidth}
       \centering
-      \includegraphics[height=1cm]{lr_run11.jpeg}
+      \includegraphics[height=3cm]{lr_run1111.jpeg}
     \end{subfigure}
 
     \vspace{2em}
 
     \begin{subfigure}[b]{\columnwidth}
       \centering
-      \includegraphics[height=4cm]{lr_run2.jpeg}
+      \includegraphics[height=4cm]{lr_run222.jpeg}
     \end{subfigure}
-
     %% \subcaptionbox{}[3cm]
     %% {\includegraphics[height=2cm]{lr_run1.jpeg}}
     %% \hspace{3em}%
     %% \subcaptionbox{}[3cm]
     %% {\includegraphics[height=2cm]{lr_run2.jpeg}}
-    \caption{Logistic Regression Training of exp2}
+    \caption{Logistic Regression Training of exp3. SGD (batch size = 125)}
+    \label{pic:lr}
   \end{figure}
 
-  In the experiement, I find that randomized parameter initialization will outperforms 0-initialization in Logistic Regression when the learning rate is small (If learning rate is sufficiently large, the randomized parameter initialization contribute very little after a few steps). The experiement showed that the randomness would influence the convergence speed of Logistic Regression. And the experiement results showed that there would still be imaprovement with more training epochs, as no plateau of error rate ss achieved in the two experiement: they all ended because the number of epochs exceeds the pre-defined limit (20/40).\\
+  In the experiement, I find that randomized parameter initialization will slightly outperforms 0-initialization in Logistic Regression when the learning rate is small (If learning rate is sufficiently large, the randomized parameter initialization contribute very little after a few steps). 0-initialization is used here as the initial learning rate is large enough in the experiement. And the experiement results of non-stochastic GD showed that there would still be imaprovement with more training epochs, as no plateau of error rate ss achieved in the two experiement: they all ended because the number of epochs exceeds the pre-defined limit (20/40), however, the convergence is too slow so I did not carry on GD training any more.\\
 
-  The hyper-parameters of non-stochastic GD are hard to tune... I tried for a while and give up trying any more. The ``0.0001'' learning rate does not work well in my case.\\
+  The training of Naive Bayes is much quicker than Logistic Regression. Loggistic Regression needs multiple epochs to converge. Because in our Naive Bayes model, we assume the conditional independence of different words given $y$, and the feature space is really large, so the parameters that Naive Bayes need to learn is much less than Logistic regression. Assume there are $d$ differnt words (input feature space size), the convergence time of NB is $O(\log(d))$, and the convergence time of LR is $O(d)$.\\
 
-  SGD outperforms GD, the error rate of SGD training decreases faster.
+  The hyper-parameters of non-stochastic GD are hard to tune... I tried for a while and give up trying any more. The ``0.0001'' learning rate does not work well in my case. SGD outperforms GD, the error rate of SGD training decreases faster. Note that there are randomness in each run of SGD training process because of the random shuffling step, but the overall convergence speed remains similar for the same configuration.\\
+
+  \textbf{Future exploration}: I think momentum will help the convergence in SGD case as it keep a running average of gradient which will make every gradient more accurate. Also, due to the larse sparse input feature space, use some regularization, especially those that can lead to weight sparsity (eg. L1 Lasso) can help reducing overfit and accelerate the convergence.\\
 
   The entrance of this program is ``main.py'', and the usage of this scripts can be viewed using ``--help'' option. There are two subcommand ``train'' and ``test'' of which the detailed help message can also be viewd. This program has a dependency on the ``numpy'' lib for just using some basic matrix multiply and element-wise operation (When I'm coding the Naive Bayes classifier, I tried to keep the compatibility of this project for the situation that ``numpy'' is not installed. However, I get tired to write a counterpart and adapter for ``numpy.ndarray'', so the logistic part of program assumes the installation of ``numpy''). On my Mac OS X, the ``numpy'' version is ``1.10.0'', but any version with compatible basic matrix operation will do.\\
 
-  \textbf{NOTE}: Altough the tool will print out several configurations like $\mbox{weight\_decay}$, $\mbox{momentum}$, I just tried some of them while debugging, but in the submitting code, code for some of the configurations are deleted or untested. Anyway, the default configuration (do not specify ``-c'' option) will work. And there are many ``FIXME'' and ``TODO'' in the code as this code is finished in a rush. Apologize... \\
+  \textbf{NOTE}: Altough the tool will print out several configurations like $\mbox{weight\_decay}$, I just tried some of them while debugging, but in the submitting code, code for some of the configurations are untested, and might not work well. Anyway, the default configuration (only specify ``batch\_size=blabla'' with ``-c'' option) will work. And there are many ``FIXME'' and ``TODO'' in the code as this code is finished in a rush. Apologize \\
 
 
 \end{addmargin}
@@ -493,7 +503,7 @@ data. Report the training and test error of both models. Submit your code along 
   \begin{itemize}
   \item Indepence Assumption: In the Naive Bayes classifier, we make the independence assumption between the occurence of different words when the document label $y$ is given. Although this assumption seems quite naive and unreal, the actual mutual information of most pair of words is small. So this assumption is practical, and can lead to simple learning process.
   \item Generative vs. Discriminateive: In this problem, as we said in \textbf{Indepence Assumption}, the actual way of how the world work is modeled by the bag-of-words assumption, and we think this assumption is reasonable and somehow practical, so a generative model that \textit{utilize the useful prior knowledge in this domain (modeling of the world)} has the potential to perform better.
-  \item Sparse input space: This problem have a large but sparse input space, Logistic Regression will spend more effort learning unimportant weight than Naive Bayes. Also, because of the sparsity, Naive Bayes model eploits the sparsity better, and hence have less parameters than Logstic Regression, this helps avoiding overfit.
+  \item Sparse input space: This problem have a large but sparse input space, Logistic Regression will spend more effort learning unimportant weight than Naive Bayes. Also, because of the sparsity, Naive Bayes model eploits the sparsity better, and hence have less parameters than Logstic Regression, this helps avoiding overfit. So some regularization methods with feature selection property (learn sparse weights) will improve the Logistic Regression model.
   \item Tunning difficulty: There are quite a few hyper-parameters to tune in Logistic Regression, it's hard and time-consuming to find a good hyper-parameters set. Conversly, the Naive Bayes barely need tunning to achieve a fairly good result.
   \end{itemize}
 \end{addmargin}
