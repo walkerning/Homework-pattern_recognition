@@ -27,7 +27,7 @@ class LogisticClassifier(DocumentClassifier):
         "batch_size": 0,
         "momentum": 0,
         "epoch": 40,
-        "weight_decay": 0.8,
+        "weight_decay": 0.5,
         "base_learning_rate": 1,
         "decay_learning_rate": 0.5,
         "sparse": True,
@@ -120,13 +120,13 @@ class LogisticClassifier(DocumentClassifier):
                     g = g - p
                     # import pdb
                     # pdb.set_trace()
-                    for word, n_count in normalized_sample:
-                        neg_gradient[:, word] = neg_gradient[:, word] + g * n_count
 
+                    for word, n_count in normalized_sample:
+                        neg_gradient[:, word] = neg_gradient[:, word] + g * (n_count * (1-self.momentum))
                 # update weight using this gradient
                 # import pdb
                 # pdb.set_trace()
-                # neg_gradient -= self.weight_decay * self.weight
+                neg_gradient = neg_gradient - self.weight * (self.weight_decay * (1-self.momentum))
                 self.weight += neg_gradient * self.learn_controller.learning_rate
                 num += step_n
             self.test_val(val_samples)

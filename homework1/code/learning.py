@@ -34,13 +34,16 @@ class PlateauController(LearnController):
         if epoch >= self.max_epoch:
             return False
 
-        if self.error_list and self.error_list[-1] - new_error_rate < self.plateau_threshold:
-            if self.run < self.run_threshold:
-                self._learning_rate *= self.decay_learning_rate
-                print("learning rate ajust to: {}".format(self._learning_rate))
-                self.run += 1
+        if self.error_list:
+            if self.error_list[-1] - new_error_rate < self.plateau_threshold:
+                if self.run < self.run_threshold:
+                    self._learning_rate *= self.decay_learning_rate
+                    print("learning rate ajust to: {}".format(self._learning_rate))
+                    self.run += 1
+                else:
+                    return False
             else:
-                return False
+                self.run = 0
 
         self.error_list.append(new_error_rate)
         return True
