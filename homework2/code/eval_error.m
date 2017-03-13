@@ -19,8 +19,8 @@ for run=1:RUN
         param = params(:, k);
         p_rect = win_func(param, xrange, sort_samples);
 
-        %figure(10+k);
-        %plot(xrange, p_rect);
+        figure(10+k);
+        plot(xrange, p_rect);
 
         % compute error
         err_mat(run, k) = sum((p_rect - p).^2) * delta_x;
