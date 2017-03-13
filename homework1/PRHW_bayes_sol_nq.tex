@@ -262,7 +262,7 @@ From the two results above, we can see the $\lambda_{mle}$ is the unbiased estim
   \[
   \log(p(\omega)) \propto \log(p(T | X, \omega, \beta)) + \log(p(\omega | \alpha)) = C - \frac{\beta}{2} \sum_{i=1}^N {(t - y(x, \omega))}^2 - \alpha \frac{\omega^T \omega}{2}
   \]
-  Doing the MAP estimation of the posterior distribution of $\omega$, is equivalent to minimize $\frac{\beta}{2} \sum_{i=1}^N {(t - y(x, \omega))}^2 + \alpha \frac{\|\omega\|}{2}$, this is the form of the square error loss with a weight decay regularizing term (when $\alpha = \beta$).
+  Doing the MAP estimation of the posterior distribution of $\omega$, is equivalent to minimize $\frac{\beta}{2} \sum_{i=1}^N {(t - y(x, \omega))}^2 + \alpha \frac{\|\omega\|^2}{2}$, this is the form of the square error loss with a weight decay regularizing term (when $\alpha = \lambda \beta$).
 \end{addmargin}
 
 \section*{Naive Bayes}
@@ -501,9 +501,12 @@ data. Report the training and test error of both models. Submit your code along 
 \begin{addmargin}[3em]{2em}
   In my experiements, the Naive Bayes classifier performs better on this task. I think the reasons might come from several aspects including problem properties and model properties:
   \begin{itemize}
-  \item Indepence Assumption: In the Naive Bayes classifier, we make the independence assumption between the occurence of different words when the document label $y$ is given. Although this assumption seems quite naive and unreal, the actual mutual information of most pair of words is small. So this assumption is practical, and can lead to simple learning process.
-  \item Generative vs. Discriminateive: In this problem, as we said in \textbf{Indepence Assumption}, the actual way of how the world work is modeled by the bag-of-words assumption, and we think this assumption is reasonable and somehow practical, so a generative model that \textit{utilize the useful prior knowledge in this domain (modeling of the world)} has the potential to perform better.
-  \item Sparse input space: This problem have a large but sparse input space, Logistic Regression will spend more effort learning unimportant weight than Naive Bayes. Also, because of the sparsity, Naive Bayes model eploits the sparsity better, and hence have less parameters than Logstic Regression, this helps avoiding overfit. So some regularization methods with feature selection property (learn sparse weights) will improve the Logistic Regression model.
+  \item Indepence Assumption(Generative vs. Discriminateive): In the Naive Bayes classifier, we make the (bag-of-words) independence assumption between the occurence of different words when the document label $y$ is given.
+    \begin{itemize}
+      \item Although this assumption seems quite naive and unreal, the actual mutual information of most pair of words is small. So a generative model that \textit{utilize the useful prior knowledge in this domain (modeling of the world)} has the potential to perform better.
+      \item The imperfection of the assumption might not be so important for this specific classification task. This simple assumption and feature selection can lead to simple learning process.
+    \end{itemize}
+  \item Sparse input space: This problem have a large but sparse input space, Logistic Regression will spend more effort learning unimportant weight than Naive Bayes. Naive Bayes model eploits the sparsity better, and hence have less parameters than Logstic Regression, this helps avoiding overfit. I think some regularization methods with feature selection property (learn sparse weights) will improve the Logistic Regression model.
   \item Tunning difficulty: There are quite a few hyper-parameters to tune in Logistic Regression, it's hard and time-consuming to find a good hyper-parameters set. Conversly, the Naive Bayes barely need tunning to achieve a fairly good result.
   \end{itemize}
 \end{addmargin}
